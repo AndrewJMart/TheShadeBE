@@ -1,2 +1,2 @@
 main:
-	g++ src/main.cpp -lpthread -o main
+	g++ src/main.cpp -lpthread -lsqlite3 -o backend
