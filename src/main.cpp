@@ -18,7 +18,7 @@ int main()
 
     // Create Emails Table
     sqlite3_stmt *create_table_result;
-    const char *create_table = "CREATE TABLE IF NOT EXISTS emails (emails text PRIMARY KEY NOT NULL);";
+    const char *create_table = "CREATE TABLE IF NOT EXISTS emails (email text PRIMARY KEY NOT NULL);";
     int statement_size = sizeof(create_table);
 
     rc = sqlite3_exec(email_db, create_table, NULL, NULL, &zErrMsg);
@@ -38,15 +38,34 @@ int main()
     });
 
     
-    CROW_ROUTE(TheShade, "/newsletter")
-    ([](const crow::request& req){
-        // TODO: Add Lock For Concurrency
+    CROW_ROUTE(TheShade, "/newsletter").methods(crow::HTTPMethod::POST)
+    ([&](const crow::request& req){
+        // Lock For Concurrency
+        std::lock_guard<std::mutex> lock(concurrency_lock);
 
-        // Load 
+        // Load JSON
         auto email_json = crow::json::load(req.body);
 
+        sqlite3_stmt *stmt;
+        const char *email_insert = "INSERT INTO emails (email) VALUES (?);";
 
-        return "Hello world";
+        int email_rc;
+
+        email_rc = sqlite3_prepare_v2(email_db, email_insert, -1, &stmt, nullptr);
+
+        std::string email_string = email_json["email"].s();
+
+        const char *email_char = email_string.c_str();
+
+        sqlite3_bind_text(stmt, 1, email_char, -1, SQLITE_TRANSIENT);
+
+        email_rc = sqlite3_step(stmt);
+
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Insert failed: " << sqlite3_errmsg(email_db) << std::endl;
+        }
+
+        return crow::response(200);
     });
 
     TheShade.port(18080).multithreaded().run();
