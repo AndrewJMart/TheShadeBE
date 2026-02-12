@@ -61,12 +61,12 @@ int main()
 
         email_rc = sqlite3_step(stmt);
 
-        if (rc != SQLITE_DONE) {
+        if (email_rc != SQLITE_DONE) {
             std::cerr << "Insert failed: " << sqlite3_errmsg(email_db) << std::endl;
         }
 
         return crow::response(200);
     });
 
-    TheShade.port(18080).multithreaded().run();
+    TheShade.bindaddr("127.0.0.1").port(18080).multithreaded().run();
 }
