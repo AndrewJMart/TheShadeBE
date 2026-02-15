@@ -2,6 +2,12 @@
 #include <sqlite3.h>
 #include <mutex>
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <string.h>
+
 int main()
 {
     // Initialize DB
@@ -36,15 +42,35 @@ int main()
     CROW_ROUTE(TheShade, "/")([](){
         return "Hello world";
     });
-
     
     CROW_ROUTE(TheShade, "/newsletter").methods(crow::HTTPMethod::POST)
     ([&](const crow::request& req){
         // Lock For Concurrency
         std::lock_guard<std::mutex> lock(concurrency_lock);
 
-        // Load JSON
+        // Load Email String
         auto email_json = crow::json::load(req.body);
+
+        std::string email_string = email_json["email"].s();
+        const char *email_char = email_string.c_str();
+
+        int n = email_string.length();
+
+        char arr[n + 1];
+
+        strcpy(arr, email_string.c_str());
+
+        // Send Welcome Email
+        pid_t pid;
+
+        char *argv[] = {"python", "../TheShadeNewsletter/newsletter.py", arr, NULL};
+
+        // Spawn Newsletter Python Script
+        int status = posix_spawn(&pid, "./TheShadeVenv/bin/activate", NULL, NULL, argv, NULL);
+
+        if (status != 0) {
+            return crow::response(500);
+        }
 
         sqlite3_stmt *stmt;
         const char *email_insert = "INSERT INTO emails (email) VALUES (?);";
@@ -52,10 +78,6 @@ int main()
         int email_rc;
 
         email_rc = sqlite3_prepare_v2(email_db, email_insert, -1, &stmt, nullptr);
-
-        std::string email_string = email_json["email"].s();
-
-        const char *email_char = email_string.c_str();
 
         sqlite3_bind_text(stmt, 1, email_char, -1, SQLITE_TRANSIENT);
 
