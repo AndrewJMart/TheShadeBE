@@ -56,17 +56,15 @@ int main()
 
         int n = email_string.length();
 
-        char arr[n + 1];
-
-        strcpy(arr, email_string.c_str());
-
         // Send Welcome Email
         pid_t pid;
+	extern char **environ;
 
-        char *argv[] = {"python", "../TheShadeNewsletter/newsletter.py", arr, NULL};
+
+        char *argv[] = {"python", "../TheShadeNewsletter/newslettersignup.py", const_cast<char*>(email_string.c_str()), NULL};
 
         // Spawn Newsletter Python Script
-        int status = posix_spawn(&pid, "./TheShadeVenv/bin/activate", NULL, NULL, argv, NULL);
+        int status = posix_spawn(&pid, "../TheShadeNewsletter/TheShadeVenv/bin/python", NULL, NULL, argv, environ);
 
         if (status != 0) {
             return crow::response(500);
