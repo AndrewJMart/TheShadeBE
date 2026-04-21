@@ -61,10 +61,10 @@ int main()
 	extern char **environ;
 
 
-        char *argv[] = {"python", "../TheShadeNewsletter/newslettersignup.py", const_cast<char*>(email_string.c_str()), NULL};
+        char *argv[] = {"python", "/root/Projects/TheShadeNewsletter/newslettersignup.py", const_cast<char*>(email_string.c_str()), NULL};
 
         // Spawn Newsletter Python Script
-        int status = posix_spawn(&pid, "../TheShadeNewsletter/TheShadeVenv/bin/python", NULL, NULL, argv, environ);
+        int status = posix_spawn(&pid, "/root/Projects/TheShadeNewsletter/TheShadeVenv/bin/python", NULL, NULL, argv, environ);
 
         if (status != 0) {
             return crow::response(500);
